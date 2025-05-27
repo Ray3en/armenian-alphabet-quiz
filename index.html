@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Армянский транскрипционный квиз</title>
+  <!-- Библиотека для конфетти -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+    #app { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+    #prompt { font-size: 2rem; margin-bottom: 1rem; }
+    #answer { padding: 0.5rem; font-size: 1.5rem; width: 100%; box-sizing: border-box; border: 2px solid #ccc; border-radius: 4px; text-align: center; }
+    #answer.error { border-color: red; }
+    #submit { margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+    #message { margin-top: 0.5rem; font-size: 1rem; }
+    #message.error { color: red; }
+    #message.success { color: green; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <p id="prompt">Загрузка...</p>
+    <input type="text" id="answer" placeholder="Введите букву" maxlength="2" disabled />
+    <button id="submit" disabled>Проверить</button>
+    <p id="message"></p>
+  </div>
+  <script>
+    let letters = [];
+    let current;
+    const promptEl = document.getElementById('prompt');
+    const answerEl = document.getElementById('answer');
+    const submitBtn = document.getElementById('submit');
+    const messageEl = document.getElementById('message');
+
+    // Загрузка данных из alph.json
+    fetch('alph.json')
+      .then(res => res.json())
+      .then(data => {
+        letters = data;
+        answerEl.disabled = false;
+        submitBtn.disabled = false;
+        pickLetter();
+      })
+      .catch(err => {
+        promptEl.textContent = 'Ошибка загрузки данных';
+        console.error(err);
+      });
+
+    function pickLetter() {
+      answerEl.value = '';
+      answerEl.classList.remove('error');
+      messageEl.textContent = '';
+      const idx = Math.floor(Math.random() * letters.length);
+      current = letters[idx];
+      // Показываем транскрипцию
+      promptEl.textContent = current.transliteration;
+      answerEl.focus();
+    }
+
+    function checkAnswer() {
+      const ans = answerEl.value.trim();
+      if (ans === current.lower || ans === current.upper) {
+        messageEl.textContent = 'Правильно!';
+        messageEl.className = 'success';
+        confetti();
+        setTimeout(pickLetter, 1000);
+      } else {
+        messageEl.textContent = 'Неправильно!';
+        messageEl.className = 'error';
+        answerEl.classList.add('error');
+      }
+    }
+
+    submitBtn.addEventListener('click', checkAnswer);
+    answerEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
+  </script>
+</body>
+</html>
