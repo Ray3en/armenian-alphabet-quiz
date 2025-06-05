@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Армянский транскрипционный квиз</title>
-  <!-- Библиотека для конфетти -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
     body {
@@ -23,10 +22,17 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: center;
       width: 300px;
+      position: relative;
     }
     #prompt {
       font-size: 2rem;
       margin-bottom: 1rem;
+      padding: 0.3rem 0.5rem;
+      border: 2px solid #aaa;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-block;
+      user-select: none;
     }
     #answer {
       padding: 0.5rem;
@@ -50,42 +56,73 @@
     #message.success {
       color: green;
     }
+    #modal {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      display: none;
+      z-index: 10;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
   <div id="app">
-    <p id="prompt">Загрузка...</p>
+    <div id="modal"></div>
+    <div id="prompt">Загрузка...</div>
     <input type="text" id="answer" placeholder="Введите букву" maxlength="2" disabled />
     <p id="message"></p>
   </div>
+
   <script>
     let letters = [];
+    let queue = [];
     let current;
     const promptEl = document.getElementById('prompt');
     const answerEl = document.getElementById('answer');
     const messageEl = document.getElementById('message');
+    const modalEl = document.getElementById('modal');
 
-    // Загрузка данных из alph.json
     fetch('alph.json')
       .then(res => res.json())
       .then(data => {
         letters = data;
         answerEl.disabled = false;
+        shuffleQueue();
         pickLetter();
         answerEl.addEventListener('input', onInput);
+
+        // Показ/скрытие модального окна по нажатию на транскрипцию
+        promptEl.addEventListener('mousedown', showModal);
+        promptEl.addEventListener('touchstart', showModal);
+        document.addEventListener('mouseup', hideModal);
+        document.addEventListener('touchend', hideModal);
       })
       .catch(err => {
         promptEl.textContent = 'Ошибка загрузки данных';
         console.error(err);
       });
 
+    function shuffleQueue() {
+      queue = [...letters].sort(() => Math.random() - 0.5);
+    }
+
     function pickLetter() {
       answerEl.value = '';
       answerEl.classList.remove('error');
       messageEl.textContent = '';
-      const idx = Math.floor(Math.random() * letters.length);
-      current = letters[idx];
-      // Показываем транскрипцию
+      messageEl.className = '';
+
+      if (queue.length === 0) {
+        shuffleQueue();
+      }
+
+      current = queue.pop();
       promptEl.textContent = current.transliteration;
       answerEl.focus();
     }
@@ -108,6 +145,16 @@
         messageEl.className = 'error';
         answerEl.classList.add('error');
       }
+    }
+
+    function showModal() {
+      if (!current) return;
+      modalEl.innerHTML = `Ответ: ${current.upper} / ${current.lower}`;
+      modalEl.style.display = 'block';
+    }
+
+    function hideModal() {
+      modalEl.style.display = 'none';
     }
   </script>
 </body>
